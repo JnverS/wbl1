@@ -1,67 +1,58 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"os"
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 )
-
-type Worker struct {
-	id int
-	taskChan chan string
-	quit chan bool
-}
-
-func (w Worker) Start(wg *sync.WaitGroup) {
-	for {
-		select {
-		case task := <- w.taskChan:
-				fmt.Println(w.id, task)
-			case <- w.quit:
-				return
-			}
-		}
-}
-
-func (w Worker) Stop() {
-	go func() {
-		w.quit <- true
-	}()
-}
-
-func NewWorker(channel chan string, Id int) *Worker {
-	return &Worker{
-		id: Id,
-		taskChan: channel,
-		quit: make(chan bool),
-	}
-}
 
 func main() {
 	str := "Тебе осталось 7 дней"
-	var wg sync.WaitGroup
 	var N int
+	// получаем количество воркеров, которых будем создавать
 	fmt.Println("Введите количество врокеров.")
 	fmt.Scan(&N)
 
-	ch := make(chan string)
+	ch := make(chan string, N)
+	// создаем контекст и передаем в него ожидание сигнала прерывания
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT)
+	defer cancel()
+	wg := sync.WaitGroup{}
 
-
+	wg.Add(N)
 	for i := 0; i < N; i++ {
-		worker := NewWorker(ch, i)
-		worker.Start(&wg)
-	}
+		k := i
+		go func () {
+			defer wg.Done()
+			for {
+				select {
+				case <- ctx.Done():
+					fmt.Println(k, "worker завершен")
+					return
+				case task, ok := <-ch:
+					if !ok {
+						return
+					}
+					fmt.Println(k, task)
 
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, os.Interrupt, syscall.SIGINT)
-	<-signalChan
+				}
+			}
+		}()
+	}
 
 	for {
-		ch <- str
+		select {
+		case <-ctx.Done():
+			wg.Wait()
+			close(ch)
+			fmt.Println("Main завершен")
+			return
+		case ch <- str:
+			time.Sleep(time.Second)
+		}
 	}
-
-
 }
 

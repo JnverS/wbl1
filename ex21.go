@@ -6,51 +6,51 @@ import "fmt"
 	Реализовать паттерн «адаптер» на любом примере
 */
 
-type Admin interface {
-	AddProgram()
+type Phone interface {
+	ConnectInJack()
 }
-// использует интерфейс admin для реализации задач
+// использует интерфейс phone для реализации задач
 type User struct {
 }
 
-func (u *User) AddNewProgramOnPC(admin Admin) {
-	fmt.Println("User tried install program on pc")
-	admin.AddProgram()
+func (u *User) ConnectJackToPhone(phone Phone) {
+	fmt.Println("User connect headphone in jack")
+	phone.ConnectInJack()
 }
 
-type Mac struct {
+type Samsung struct {
 }
 
-func (m *Mac) AddProgram() {
-	fmt.Println("programm installed on mac")
+func (s *Samsung) ConnectInJack() {
+	fmt.Println("Headphne is connect to jack")
 }
 
 // у данной структуры нет юзер-френдли метода для реализации его потребностей
-type Linux struct {
+type Xiaomi struct {
 }
 
-func (l *Linux) AddProgramOnLinux() {
-	fmt.Println("Tadam!")
+func (x *Xiaomi) ConnectToTypeC() {
+	fmt.Println("Headphne is connect to type-C")
 }
-// поэтому создаем адаптер который позволяет работать с объектами linux как admin
-type LinuxAdapter struct {
-	l *Linux
+// поэтому создаем адаптер который позволяет работать с объектами xiaomi как phone
+type XiaomiAdapter struct {
+	x *Xiaomi
 }
 
-func (la *LinuxAdapter) AddProgram() {
-	fmt.Println("Adapter что-то там шаманит")
-	la.l.AddProgramOnLinux()
+func (xa *XiaomiAdapter) ConnectInJack() {
+	fmt.Println("Adapter converts type-c to jack")
+	xa.x.ConnectToTypeC()
 }
 
 
 func main() {
 	user := &User{}
-	mac := &Mac{}
+	sams := &Samsung{}
 
-	user.AddNewProgramOnPC(mac)
-	linux := &Linux{}
-	lAdapter := &LinuxAdapter{
-		l: linux,
+	user.ConnectJackToPhone(sams)
+	xiaomi := &Xiaomi{}
+	xAdapter := &XiaomiAdapter{
+		x: xiaomi,
 	}
-	user.AddNewProgramOnPC(lAdapter)
+	user.ConnectJackToPhone(xAdapter)
 }

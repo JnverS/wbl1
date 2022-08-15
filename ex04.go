@@ -12,9 +12,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/signal"
 	"sync"
-	"syscall"
 	"time"
 )
 
@@ -26,9 +26,8 @@ func main() {
 	fmt.Scan(&N)
 
 	ch := make(chan string, N)
-	// создаем контекст и передаем в него ожидание сигнала прерывания
-	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT)
-	defer cancel()
+	ctx, cancel := context.WithCancel(context.Background())
+	go handleSignals(cancel)
 	wg := sync.WaitGroup{}
 
 	wg.Add(N)
@@ -65,3 +64,15 @@ func main() {
 	}
 }
 
+func handleSignals(cancel context.CancelFunc) {
+	sigCh := make(chan os.Signal)
+	signal.Notify(sigCh, os.Interrupt)
+	for {
+		sig := <- sigCh
+		switch sig {
+		case os.Interrupt:
+			cancel()
+			return
+		}
+	}
+}
